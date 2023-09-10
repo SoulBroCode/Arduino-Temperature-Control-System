@@ -20,6 +20,9 @@ class TemperatureSensor {
 
     TemperatureSensor(int index, DS18B20 &ref);
 
+    float GetTempC();
+    void Print();
+
     static String TypeToString(Type type);
   private:
      DS18B20* _DS18B20;
