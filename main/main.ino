@@ -3,6 +3,8 @@
 #include "TemperatureSensor.h"
 #include "Button.h"
 
+const int LED_PIN = 10;
+
 const float MAX_TEMP = 80;
 const float MIN_TEMP = -20;
 float _ChangeableTemp = 30; 
@@ -43,6 +45,14 @@ void setup() {
   Serial.println();
   Serial.print(F("------- Starting --------"));
   Serial.println();
+
+  //red led on arudino
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW); 
+ 
+  //Red Led on box 
+  pinMode(LED_PIN, OUTPUT);
+  analogWrite(LED_PIN, 120);
 
   //Sensor
    _TemperatureSensorCount = _DS18B20.getNumberOfDevices();
