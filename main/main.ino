@@ -3,7 +3,27 @@
 #include "TemperatureSensor.h"
 #include "Button.h"
 
+//#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels 128
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels 64
+
+
+#define OLED_RESET     -1 
+#define SCREEN_ADDRESS  0x3C
+
+
+#ifndef ONEWIRE_SEARCH
+#define ONEWIRE_SEARCH 0
+#endif
+
 const int LED_PIN = 10;
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const float MAX_TEMP = 80;
 const float MIN_TEMP = -20;
@@ -82,6 +102,30 @@ void loop() {
 }
 
 void NormalLoop(){
+   if(_TemperatureSensorCount < TemperatureSensor::Unknown)
+  {
+    Serial.println();
+    Serial.println(F("-------------------"));
+    Serial.println(F("Error : Missing Sensor"));
+
+    display.clearDisplay();
+
+    display.setTextSize(2);   
+    display.setTextColor(SSD1306_WHITE);       
+    display.setCursor(0,0); 
+
+    display.print(F("Error"));
+    display.println();
+    display.print(F("Missing"));
+    display.println();
+    display.print(F("Sensor"));
+    display.display();
+
+    delay(5000);
+
+    return;
+  } 
+
   Serial.println();
   Serial.println(F("-------------------"));
   
@@ -105,6 +149,8 @@ void NormalLoop(){
     //Serial.print(F("Turning OFF fans"));
   }
 
+    NormalDisplay();
+
   if(_FanState != _NewFanState && _FanTimerCounter >= FAN_SWITCHABLE_COUNTER){
     if(_NewFanState == On){
       TurningOnFan();
@@ -123,6 +169,7 @@ void NormalLoop(){
     Serial.println(F("Enable Editing"));
     _State = Edit;
     TurningOffFan();
+    EditDisplay();   
   }
 
   delay(5000);
@@ -142,6 +189,27 @@ void TurningOffFan(){
   _FanState = Off;
   analogWrite(FAN_RELAY_PIN, 0);
 }
+
+void NormalDisplay(void) {
+
+  display.clearDisplay();
+
+  display.setTextSize(2);   
+  display.setTextColor(SSD1306_WHITE);       
+  display.setCursor(0,0); 
+
+  display.print(F("In: "));
+  display.print(_InsideTemp);
+  display.println();
+  display.print(F("Out: "));
+  display.print(_OutsideTemp);
+  display.println();
+  display.print(F("MAX: "));
+  display.print(_ChangeableTemp);
+  display.display();
+}
+
+
 
 void EditLoop(){
 
@@ -164,12 +232,14 @@ void EditLoop(){
       Serial.println(_ChangeableTemp);
     }
 
+    EditDisplay();
 
     if(_EditBtn.IsOn())
     {
       Serial.println();
       Serial.println(F("Finish Editing"));
       _State = Normal;
+        NormalDisplay();
     }
 
     if(_FanTimerCounter < FAN_SWITCHABLE_COUNTER)
@@ -177,6 +247,21 @@ void EditLoop(){
       _FanTimerCounter += 0.1;
     }
     delay(500);
+}
+
+void EditDisplay(void) {
+
+  display.clearDisplay();
+
+  display.setTextSize(2);   
+  display.setTextColor(SSD1306_WHITE);        // Draw white text
+  display.setCursor(0,0);             // Start at top-left corner
+
+  display.print(F("Editing..."));
+  display.println(F(" "));
+  display.print(F("MAX: "));
+  display.print(_ChangeableTemp);
+  display.display();
 }
 
 
