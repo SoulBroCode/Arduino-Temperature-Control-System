@@ -7,7 +7,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-
+#include <EEPROM.h>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels 128
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels 64
@@ -21,7 +21,13 @@
 #define ONEWIRE_SEARCH 0
 #endif
 
+
+//Saving
+const int CHANGEABLE_TEMP_ADDRESS = 0;
+float _ChangeableTempData;
+
 const int LED_PIN = 10;
+
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -60,11 +66,22 @@ FanState _NewFanState(Off);
 float FAN_SWITCHABLE_COUNTER = 3; //15 seconds
 float _FanTimerCounter = 3;
 
+
+
+
 void setup() {
+  delay(3000);
+
   Serial.begin(9600);
   Serial.println();
   Serial.print(F("------- Starting --------"));
   Serial.println();
+
+  //Loading Data
+  EEPROM.get(CHANGEABLE_TEMP_ADDRESS, _ChangeableTempData);
+  if(!isnan(_ChangeableTempData)){
+      _ChangeableTemp = _ChangeableTempData;
+  } 
 
   //red led on arudino
   pinMode(LED_BUILTIN, OUTPUT);
@@ -74,7 +91,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   analogWrite(LED_PIN, 120);
 
-  //Sensor
+ //Sensor
    _TemperatureSensorCount = _DS18B20.getNumberOfDevices();
   _TemperatureSensors =  new TemperatureSensor*[_TemperatureSensorCount];
 
@@ -86,10 +103,18 @@ void setup() {
   {
     _TemperatureSensors[i] = new TemperatureSensor(i, _DS18B20);
   }
+
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  //Relay Fan pins
+  pinMode(FAN_RELAY_PIN, OUTPUT);
 }
 
 void loop() {
-  delay(3000);
 
   if(_State == Normal)
   {
@@ -99,10 +124,26 @@ void loop() {
   {
     EditLoop();
   }
+
+
+//----------------------------
+  //Potentiometer
+  // int readValue = analogRead(POT_PIN);
+
+  // Serial.print(F("readValuee : "));  
+  // Serial.println(readValue);
+
+  // int mapValue = map(readValue,0, 1023, 0, 255);
+  // Serial.print(F("mapValue : "));  
+  // Serial.println(mapValue);
+  
+  // analogWrite(MOSTFET_PIN, mapValue); //102
+
+  // delay(500);
 }
 
 void NormalLoop(){
-   if(_TemperatureSensorCount < TemperatureSensor::Unknown)
+  if(_TemperatureSensorCount < TemperatureSensor::Unknown)
   {
     Serial.println();
     Serial.println(F("-------------------"));
@@ -149,7 +190,9 @@ void NormalLoop(){
     //Serial.print(F("Turning OFF fans"));
   }
 
-    NormalDisplay();
+  NormalDisplay();
+
+
 
   if(_FanState != _NewFanState && _FanTimerCounter >= FAN_SWITCHABLE_COUNTER){
     if(_NewFanState == On){
@@ -164,6 +207,7 @@ void NormalLoop(){
     _FanTimerCounter += 1;
   }
 
+
   if(_EditBtn.IsOn()){
     Serial.println();
     Serial.println(F("Enable Editing"));
@@ -174,7 +218,6 @@ void NormalLoop(){
 
   delay(5000);
 }
-
 
 void TurningOnFan(){ 
   Serial.print(F("Turning ON fans"));
@@ -189,6 +232,7 @@ void TurningOffFan(){
   _FanState = Off;
   analogWrite(FAN_RELAY_PIN, 0);
 }
+
 
 void NormalDisplay(void) {
 
@@ -239,7 +283,8 @@ void EditLoop(){
       Serial.println();
       Serial.println(F("Finish Editing"));
       _State = Normal;
-        NormalDisplay();
+      NormalDisplay();
+      SavingToMemory();
     }
 
     if(_FanTimerCounter < FAN_SWITCHABLE_COUNTER)
@@ -248,6 +293,16 @@ void EditLoop(){
     }
     delay(500);
 }
+
+void SavingToMemory()
+{
+  if (_ChangeableTemp != _ChangeableTempData)
+  {
+    Serial.println(F("Saving to memory"));
+    EEPROM.put(CHANGEABLE_TEMP_ADDRESS, _ChangeableTemp);
+  }
+}
+
 
 void EditDisplay(void) {
 
@@ -263,13 +318,3 @@ void EditDisplay(void) {
   display.print(_ChangeableTemp);
   display.display();
 }
-
-
-
-
-
-
-
-
-
-
