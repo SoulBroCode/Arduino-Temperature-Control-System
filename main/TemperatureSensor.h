@@ -12,8 +12,8 @@
 class TemperatureSensor {
   public:   
     enum Type {
-      Outside,    // 0
       Inside,
+      Outside,    // 0
       Unknown,
       Length
     };
