@@ -26,6 +26,9 @@
 const int CHANGEABLE_TEMP_ADDRESS = 0;
 float _ChangeableTempData;
 
+const int DIFF_TEMP_ADDRESS = 50;
+float _DiffTempData;
+
 const int LED_PIN = 10;
 
 
@@ -34,6 +37,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const float MAX_TEMP = 80;
 const float MIN_TEMP = -20;
 float _ChangeableTemp = 30; 
+float _DiffTemp = 2;
 float _InsideTemp = 0;
 float _OutsideTemp = 0;
 
@@ -83,6 +87,12 @@ void setup() {
       _ChangeableTemp = _ChangeableTempData;
   } 
 
+  EEPROM.get(DIFF_TEMP_ADDRESS, _DiffTempData);
+  if(!isnan(_DiffTempData)){
+      _DiffTemp = _DiffTempData;
+  } 
+
+
   //red led on arudino
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW); 
@@ -115,7 +125,6 @@ void setup() {
 }
 
 void loop() {
-
   if(_State == Normal)
   {
     NormalLoop();
@@ -143,36 +152,38 @@ void loop() {
 }
 
 void NormalLoop(){
-  if(_TemperatureSensorCount < TemperatureSensor::Unknown)
-  {
-    Serial.println();
-    Serial.println(F("-------------------"));
-    Serial.println(F("Error : Missing Sensor"));
+  // if(_TemperatureSensorCount < TemperatureSensor::Unknown)
+  // {
+  //   Serial.println();
+  //   Serial.println(F("-------------------"));
+  //   Serial.println(F("Error : Missing Sensor"));
 
-    display.clearDisplay();
+  //   display.clearDisplay();
 
-    display.setTextSize(2);   
-    display.setTextColor(SSD1306_WHITE);       
-    display.setCursor(0,0); 
+  //   display.setTextSize(2);   
+  //   display.setTextColor(SSD1306_WHITE);       
+  //   display.setCursor(0,0); 
 
-    display.print(F("Error"));
-    display.println();
-    display.print(F("Missing"));
-    display.println();
-    display.print(F("Sensor"));
-    display.display();
+  //   display.print(F("Error"));
+  //   display.println();
+  //   display.print(F("Missing"));
+  //   display.println();
+  //   display.print(F("Sensor"));
+  //   display.display();
 
-    delay(5000);
+  //   delay(5000);
 
-    return;
-  } 
+  //   return;
+  // } 
 
   Serial.println();
   Serial.println(F("-------------------"));
   
  
-  _InsideTemp = _TemperatureSensors[TemperatureSensor::Inside]->GetTempC();
-  _OutsideTemp = _TemperatureSensors[TemperatureSensor::Outside]->GetTempC();
+  // _InsideTemp = _TemperatureSensors[TemperatureSensor::Inside]->GetTempC();
+  // _OutsideTemp = _TemperatureSensors[TemperatureSensor::Outside]->GetTempC();
+  _InsideTemp = 10;
+  _OutsideTemp = 12;
 
   if(_InsideTemp < _ChangeableTemp)
   {
@@ -235,7 +246,6 @@ void TurningOffFan(){
 
 
 void NormalDisplay(void) {
-
   display.clearDisplay();
 
   display.setTextSize(2);   
@@ -250,6 +260,10 @@ void NormalDisplay(void) {
   display.println();
   display.print(F("MAX: "));
   display.print(_ChangeableTemp);
+  // display.display();
+  display.println();
+  display.print(F("Diff: "));
+  display.print(_DiffTemp);
   display.display();
 }
 
@@ -300,6 +314,11 @@ void SavingToMemory()
   {
     Serial.println(F("Saving to memory"));
     EEPROM.put(CHANGEABLE_TEMP_ADDRESS, _ChangeableTemp);
+  }
+  if (_DiffTemp != _DiffTempData)
+  {
+    Serial.println(F("Saving to memory"));
+    EEPROM.put(DIFF_TEMP_ADDRESS, _DiffTemp);
   }
 }
 
