@@ -70,9 +70,6 @@ FanState _NewFanState(Off);
 float FAN_SWITCHABLE_COUNTER = 3; //15 seconds
 float _FanTimerCounter = 3;
 
-
-
-
 void setup() {
   delay(3000);
 
@@ -152,53 +149,46 @@ void loop() {
 }
 
 void NormalLoop(){
-  // if(_TemperatureSensorCount < TemperatureSensor::Unknown)
-  // {
-  //   Serial.println();
-  //   Serial.println(F("-------------------"));
-  //   Serial.println(F("Error : Missing Sensor"));
+  if(_TemperatureSensorCount < TemperatureSensor::Unknown)
+  {
+    Serial.println();
+    Serial.println(F("-------------------"));
+    Serial.println(F("Error : Missing Sensor"));
 
-  //   display.clearDisplay();
+    display.clearDisplay();
 
-  //   display.setTextSize(2);   
-  //   display.setTextColor(SSD1306_WHITE);       
-  //   display.setCursor(0,0); 
+    display.setTextSize(2);   
+    display.setTextColor(SSD1306_WHITE);       
+    display.setCursor(0,0); 
 
-  //   display.print(F("Error"));
-  //   display.println();
-  //   display.print(F("Missing"));
-  //   display.println();
-  //   display.print(F("Sensor"));
-  //   display.display();
+    display.print(F("Error"));
+    display.println();
+    display.print(F("Missing"));
+    display.println();
+    display.print(F("Sensor"));
+    display.display();
 
-  //   delay(5000);
+    delay(5000);
 
-  //   return;
-  // } 
+    return;
+  } 
 
   Serial.println();
   Serial.println(F("-------------------"));
   
  
-  // _InsideTemp = _TemperatureSensors[TemperatureSensor::Inside]->GetTempC();
-  // _OutsideTemp = _TemperatureSensors[TemperatureSensor::Outside]->GetTempC();
+  _InsideTemp = _TemperatureSensors[TemperatureSensor::Inside]->GetTempC();
+  _OutsideTemp = _TemperatureSensors[TemperatureSensor::Outside]->GetTempC();
   _InsideTemp = 10;
   _OutsideTemp = 12;
 
-  if(_InsideTemp < _ChangeableTemp)
-  {
-    if(_OutsideTemp > _InsideTemp){
-      _NewFanState = On;
-      //Serial.print(F("Turning ON fans"));
-    }
-    else{
-      _NewFanState = Off;
-      //Serial.print(F("Turning OFF fans"));
-    }
-  }
-  else{
+  if(_InsideTemp >= _ChangeableTemp || _InsideTemp > _OutsideTemp){
     _NewFanState = Off;
     //Serial.print(F("Turning OFF fans"));
+  }
+  else  if(_OutsideTemp > _InsideTemp + _DiffTemp){
+    _NewFanState = On;
+     //Serial.print(F("Turning ON fans"));
   }
 
   NormalDisplay();
@@ -260,7 +250,6 @@ void NormalDisplay(void) {
   display.println();
   display.print(F("MAX: "));
   display.print(_ChangeableTemp);
-  // display.display();
   display.println();
   display.print(F("Diff: "));
   display.print(_DiffTemp);
@@ -271,54 +260,68 @@ void NormalDisplay(void) {
 
 void EditLoop(){
 
-  if(_UpBtn.IsOn())
-    {
-      if(_ChangeableTemp < MAX_TEMP)
-      {
-        _ChangeableTemp += 0.5;
-      }
-      Serial.print(F("Changeable Temp : "));
-      Serial.println(_ChangeableTemp);
+  if(_EditBtn.IsOn() && _UpBtn.IsOn())
+  {
+    if(_DiffTemp < MAX_TEMP){
+      _DiffTemp += 0.1;
     }
-    if(_DownBtn.IsOn())
-    {
-      if(_ChangeableTemp > MIN_TEMP)
-      {
-        _ChangeableTemp -= 0.5;
-      }
-      Serial.print(F("Changeable Temp : "));
-      Serial.println(_ChangeableTemp);
-    }
-
+    Serial.print(F("Diff Temp : "));
+    Serial.println(_DiffTemp);
     EditDisplay();
-
-    if(_EditBtn.IsOn())
-    {
-      Serial.println();
-      Serial.println(F("Finish Editing"));
-      _State = Normal;
-      NormalDisplay();
-      SavingToMemory();
+  }
+  else if(_EditBtn.IsOn() && _DownBtn.IsOn())
+  {
+    if(_DiffTemp < MIN_TEMP){
+      _DiffTemp -= 0.1;
     }
-
-    if(_FanTimerCounter < FAN_SWITCHABLE_COUNTER)
-    {
-      _FanTimerCounter += 0.1;
+    Serial.print(F("Diff Temp : "));
+    Serial.println(_DiffTemp);
+    EditDisplay();
+  }
+  else if(_UpBtn.IsOn())
+  {
+    if(_ChangeableTemp < MAX_TEMP){
+      _ChangeableTemp += 0.5;
     }
-    delay(500);
+    Serial.print(F("Changeable Temp : "));
+    Serial.println(_ChangeableTemp);
+    EditDisplay();
+  }
+  else if(_DownBtn.IsOn())
+  {
+    if(_ChangeableTemp > MIN_TEMP){
+      _ChangeableTemp -= 0.5;
+    }
+    Serial.print(F("Changeable Temp : "));
+    Serial.println(_ChangeableTemp);
+    EditDisplay();
+  }
+  else if(_EditBtn.IsOn())
+  {
+    Serial.println();
+    Serial.println(F("Finish Editing"));
+    _State = Normal;
+    NormalDisplay();
+    SavingToMemory();
+  }
+
+  if(_FanTimerCounter < FAN_SWITCHABLE_COUNTER){
+    _FanTimerCounter += 0.1;
+  }
+  delay(500);
 }
 
 void SavingToMemory()
 {
-  if (_ChangeableTemp != _ChangeableTempData)
-  {
+  if (_ChangeableTemp != _ChangeableTempData){
     Serial.println(F("Saving to memory"));
     EEPROM.put(CHANGEABLE_TEMP_ADDRESS, _ChangeableTemp);
+    _ChangeableTempData = _ChangeableTemp;
   }
-  if (_DiffTemp != _DiffTempData)
-  {
+  if (_DiffTemp != _DiffTempData){
     Serial.println(F("Saving to memory"));
     EEPROM.put(DIFF_TEMP_ADDRESS, _DiffTemp);
+    _DiffTempData = _DiffTemp;
   }
 }
 
@@ -335,5 +338,10 @@ void EditDisplay(void) {
   display.println(F(" "));
   display.print(F("MAX: "));
   display.print(_ChangeableTemp);
+
+  display.println(F(" "));
+  display.print(F("Diff: "));
+  display.print(_ChangeableTemp);
+  
   display.display();
 }
