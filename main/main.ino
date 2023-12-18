@@ -179,8 +179,6 @@ void NormalLoop(){
  
   _InsideTemp = _TemperatureSensors[TemperatureSensor::Inside]->GetTempC();
   _OutsideTemp = _TemperatureSensors[TemperatureSensor::Outside]->GetTempC();
-  _InsideTemp = 10;
-  _OutsideTemp = 12;
 
   if(_InsideTemp >= _ChangeableTemp || _InsideTemp > _OutsideTemp){
     _NewFanState = Off;
@@ -192,8 +190,6 @@ void NormalLoop(){
   }
 
   NormalDisplay();
-
-
 
   if(_FanState != _NewFanState && _FanTimerCounter >= FAN_SWITCHABLE_COUNTER){
     if(_NewFanState == On){
@@ -213,6 +209,7 @@ void NormalLoop(){
     Serial.println();
     Serial.println(F("Enable Editing"));
     _State = Edit;
+    _NewFanState = Off;
     TurningOffFan();
     EditDisplay();   
   }
@@ -251,7 +248,7 @@ void NormalDisplay(void) {
   display.print(F("MAX: "));
   display.print(_ChangeableTemp);
   display.println();
-  display.print(F("Diff: "));
+  display.print(F("Dif: "));
   display.print(_DiffTemp);
   display.display();
 }
@@ -265,16 +262,16 @@ void EditLoop(){
     if(_DiffTemp < MAX_TEMP){
       _DiffTemp += 0.1;
     }
-    Serial.print(F("Diff Temp : "));
+    Serial.print(F("Dif Temp : "));
     Serial.println(_DiffTemp);
     EditDisplay();
   }
   else if(_EditBtn.IsOn() && _DownBtn.IsOn())
   {
-    if(_DiffTemp < MIN_TEMP){
+    if(_DiffTemp > MIN_TEMP){
       _DiffTemp -= 0.1;
     }
-    Serial.print(F("Diff Temp : "));
+    Serial.print(F("Dif Temp : "));
     Serial.println(_DiffTemp);
     EditDisplay();
   }
@@ -338,10 +335,9 @@ void EditDisplay(void) {
   display.println(F(" "));
   display.print(F("MAX: "));
   display.print(_ChangeableTemp);
-
-  display.println(F(" "));
-  display.print(F("Diff: "));
-  display.print(_ChangeableTemp);
+  display.println();
+  display.print(F("Dif: "));
+  display.print(_DiffTemp);
   
   display.display();
 }
