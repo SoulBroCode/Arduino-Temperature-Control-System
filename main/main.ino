@@ -29,6 +29,10 @@ float _ChangeableTempData;
 const int DIFF_TEMP_ADDRESS = 50;
 float _DiffTempData;
 
+const int OFFSET_TEMP_ADDRESS = 100;
+float _OffsetTempData;
+
+
 const int LED_PIN = 10;
 
 
@@ -38,6 +42,7 @@ const float MAX_TEMP = 80;
 const float MIN_TEMP = -20;
 float _ChangeableTemp = 30; 
 float _DiffTemp = 2;
+float _OffsetTemp = 1;
 float _InsideTemp = 0;
 float _OutsideTemp = 0;
 
@@ -88,6 +93,12 @@ void setup() {
   if(!isnan(_DiffTempData)){
       _DiffTemp = _DiffTempData;
   } 
+
+  EEPROM.get(OFFSET_TEMP_ADDRESS, _OffsetTempData);
+  if(!isnan(_OffsetTempData)){
+      _OffsetTemp = _OffsetTempData;
+  } 
+
 
 
   //red led on arudino
@@ -173,20 +184,25 @@ void NormalLoop(){
     return;
   } 
 
-  Serial.println();
-  Serial.println(F("-------------------"));
+  // Serial.println();
+  // Serial.println(F("-------------------"));
   
  
   _InsideTemp = _TemperatureSensors[TemperatureSensor::Inside]->GetTempC();
   _OutsideTemp = _TemperatureSensors[TemperatureSensor::Outside]->GetTempC();
 
-  if(_InsideTemp >= _ChangeableTemp || _InsideTemp > _OutsideTemp){
-    _NewFanState = Off;
-    //Serial.print(F("Turning OFF fans"));
+  if(_NewFanState == On){
+    if(_InsideTemp >= _ChangeableTemp || _InsideTemp + _OffsetTemp > _OutsideTemp){
+      _NewFanState = Off;
+      //Serial.print(F("Turning OFF fans"));
+    }
   }
-  else  if(_OutsideTemp > _InsideTemp + _DiffTemp){
-    _NewFanState = On;
-     //Serial.print(F("Turning ON fans"));
+  else
+  {
+    if(_OutsideTemp > _InsideTemp + _DiffTemp){
+      _NewFanState = On;
+      //Serial.print(F("Turning ON fans"));
+    }
   }
 
   NormalDisplay();
@@ -206,8 +222,8 @@ void NormalLoop(){
 
 
   if(_EditBtn.IsOn()){
-    Serial.println();
-    Serial.println(F("Enable Editing"));
+    // Serial.println();
+    // Serial.println(F("Enable Editing"));
     _State = Edit;
     _NewFanState = Off;
     TurningOffFan();
@@ -255,15 +271,34 @@ void NormalDisplay(void) {
 
 
 
+
 void EditLoop(){
 
-  if(_EditBtn.IsOn() && _UpBtn.IsOn())
+  if(_EditBtn.IsOn() && _UpBtn.IsOn() && _DownBtn.IsOn())
+  {
+    if(_OffsetTemp < MAX_TEMP){
+      _OffsetTemp += 0.1;
+    }
+    // Serial.print(F("Off Temp : "));
+    // Serial.println(_OffsetTemp);
+    EditDisplay();
+  }
+  else if(_UpBtn.IsOn() && _DownBtn.IsOn())
+  {
+    if(_OffsetTemp > MIN_TEMP){
+      _OffsetTemp -= 0.1;
+    }
+    // Serial.print(F("Off Temp : "));
+    // Serial.println(_OffsetTemp);
+    EditDisplay();
+  }
+  else if(_EditBtn.IsOn() && _UpBtn.IsOn())
   {
     if(_DiffTemp < MAX_TEMP){
       _DiffTemp += 0.1;
     }
-    Serial.print(F("Dif Temp : "));
-    Serial.println(_DiffTemp);
+    // Serial.print(F("Dif Temp : "));
+    // Serial.println(_DiffTemp);
     EditDisplay();
   }
   else if(_EditBtn.IsOn() && _DownBtn.IsOn())
@@ -271,8 +306,8 @@ void EditLoop(){
     if(_DiffTemp > MIN_TEMP){
       _DiffTemp -= 0.1;
     }
-    Serial.print(F("Dif Temp : "));
-    Serial.println(_DiffTemp);
+    // Serial.print(F("Dif Temp : "));
+    // Serial.println(_DiffTemp);
     EditDisplay();
   }
   else if(_UpBtn.IsOn())
@@ -280,8 +315,8 @@ void EditLoop(){
     if(_ChangeableTemp < MAX_TEMP){
       _ChangeableTemp += 0.5;
     }
-    Serial.print(F("Changeable Temp : "));
-    Serial.println(_ChangeableTemp);
+    // Serial.print(F("Changeable Temp : "));
+    // Serial.println(_ChangeableTemp);
     EditDisplay();
   }
   else if(_DownBtn.IsOn())
@@ -289,14 +324,14 @@ void EditLoop(){
     if(_ChangeableTemp > MIN_TEMP){
       _ChangeableTemp -= 0.5;
     }
-    Serial.print(F("Changeable Temp : "));
-    Serial.println(_ChangeableTemp);
+    // Serial.print(F("Changeable Temp : "));
+    // Serial.println(_ChangeableTemp);
     EditDisplay();
   }
   else if(_EditBtn.IsOn())
   {
-    Serial.println();
-    Serial.println(F("Finish Editing"));
+    // Serial.println();
+    // Serial.println(F("Finish Editing"));
     _State = Normal;
     NormalDisplay();
     SavingToMemory();
@@ -310,15 +345,18 @@ void EditLoop(){
 
 void SavingToMemory()
 {
+  // Serial.println(F("Saving to memory"));
   if (_ChangeableTemp != _ChangeableTempData){
-    Serial.println(F("Saving to memory"));
     EEPROM.put(CHANGEABLE_TEMP_ADDRESS, _ChangeableTemp);
     _ChangeableTempData = _ChangeableTemp;
   }
   if (_DiffTemp != _DiffTempData){
-    Serial.println(F("Saving to memory"));
     EEPROM.put(DIFF_TEMP_ADDRESS, _DiffTemp);
     _DiffTempData = _DiffTemp;
+  }
+  if (_OffsetTemp != _OffsetTempData){
+    EEPROM.put(OFFSET_TEMP_ADDRESS, _OffsetTemp);
+    _OffsetTempData = _OffsetTemp;
   }
 }
 
@@ -332,7 +370,10 @@ void EditDisplay(void) {
   display.setCursor(0,0);             // Start at top-left corner
 
   display.print(F("Editing..."));
-  display.println(F(" "));
+  display.println();
+  display.print(F("Off: "));
+  display.print(_OffsetTemp);
+  display.println();
   display.print(F("MAX: "));
   display.print(_ChangeableTemp);
   display.println();
