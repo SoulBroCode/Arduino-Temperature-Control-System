@@ -14,9 +14,9 @@ TemperatureSensor::TemperatureSensor(int index, DS18B20 &ref){
 
     _DS18B20 = &ref;
 
-    Serial.print(F("Temperture Sensor : "));
-    Serial.print(TemperatureSensor::TypeToString(_Type));
-    Serial.println();
+    // Serial.print(F("Temperture Sensor : "));
+    // Serial.print(TemperatureSensor::TypeToString(_Type));
+    // Serial.println();
 };
 
 
@@ -26,11 +26,11 @@ float TemperatureSensor::GetTempC()
 
   float temp = _DS18B20->getTempC();
 
-  Serial.print(TemperatureSensor::TypeToString(_Type));
-  Serial.print(F(" Temperature: "));
-  Serial.print(temp);
-  Serial.print(F(" C / "));
-  Serial.println();
+  // Serial.print(TemperatureSensor::TypeToString(_Type));
+  // Serial.print(F(" Temperature: "));
+  // Serial.print(temp);
+  // Serial.print(F(" C / "));
+  // Serial.println();
 
   return temp;
 }
@@ -43,24 +43,24 @@ void TemperatureSensor::Print()
   _DS18B20->getAddress(address);
   Serial.print(F("Address:"));
   for (uint8_t i = 0; i < 8; i++) {
-    Serial.print(" ");
-    Serial.print(address[i]);
+    // Serial.print(F(" "));
+    // Serial.print(address[i]);
   }
   Serial.println();
 
   Serial.print(F("Power Mode: "));
   if (_DS18B20->getPowerMode()) {
-    Serial.println(F("External"));
+    // Serial.println(F("External"));
   } else {
-    Serial.println(F("Parasite"));
+    // Serial.println(F("Parasite"));
   }
 
-  Serial.print(F("Temperature: "));
-  Serial.print(_DS18B20->getTempC());
-  Serial.print(F(" C / "));
-  Serial.print(_DS18B20->getTempF());
-  Serial.println(F(" F"));
-  Serial.println();
+  // Serial.print(F("Temperature: "));
+  // Serial.print(_DS18B20->getTempC());
+  // Serial.print(F(" C / "));
+  // Serial.print(_DS18B20->getTempF());
+  // Serial.println(F(" F"));
+  // Serial.println();
 }
 
 
